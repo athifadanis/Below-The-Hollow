@@ -17380,7 +17380,7 @@ PrefabInstance:
     - target: {fileID: 4014126013994137444, guid: a208b373bd57f2745b05d3b11b430439,
         type: 3}
       propertyPath: m_Name
-      value: School (env)
+      value: GameObject
       objectReference: {fileID: 0}
     - target: {fileID: 8441923640092886869, guid: a208b373bd57f2745b05d3b11b430439,
         type: 3}
