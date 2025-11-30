@@ -1,75 +1,90 @@
-using UnityEngine;
+﻿using UnityEngine;
 
 [RequireComponent(typeof(CharacterController))]
-public class PlayerController : MonoBehaviour
+public class PlayerMovement : MonoBehaviour
 {
     [Header("Movement Settings")]
     public float moveSpeed = 5f;
+    public float jumpHeight = 2f;
     public float gravity = -9.81f;
 
-    [Header("Ground Check")]
-    public Transform groundCheck;
-    public float groundDistance = 0.4f;
-    public LayerMask groundMask;
+    [Header("Camera Settings")]
+    public Camera playerCamera;
+    public float cameraFollowSpeed = 3f;
+    public Vector3 cameraOffset = new Vector3(5, 2, 0); // Side-view offset
 
-    private CharacterController _controller;
+    private CharacterController characterController;
+    private Animator animator;
     private Vector3 velocity;
     private bool isGrounded;
 
-    // --- TAMBAHAN 1: Variabel Animator ---
-    private Animator animator;
-
     void Start()
     {
-        _controller = GetComponent<CharacterController>();
-
-        // --- TAMBAHAN 2: Cari komponen Animator saat game mulai ---
+        characterController = GetComponent<CharacterController>();
         animator = GetComponent<Animator>();
+
+        if (playerCamera == null)
+            playerCamera = Camera.main;
     }
 
     void Update()
     {
-        // 1. Cek Ground
-        // (Pastikan groundCheck tidak error/null)
-        if (groundCheck != null)
-        {
-            isGrounded = Physics.CheckSphere(groundCheck.position, groundDistance, groundMask);
-        }
+        // Ground check
+        isGrounded = characterController.isGrounded;
 
+        // Reset velocity ketika di tanah
         if (isGrounded && velocity.y < 0)
         {
             velocity.y = -2f;
         }
 
-        // 2. Input Gerak
-        float x = Input.GetAxis("Horizontal");
-        float z = Input.GetAxis("Vertical");
+        // Input movement - DIPERBAIKI
+        float horizontal = Input.GetAxis("Horizontal");
+        float vertical = Input.GetAxis("Vertical");
 
-        Vector3 right = transform.right;
-        Vector3 forward = transform.forward;
-        right.y = 0f;
-        forward.y = 0f;
-        right.Normalize();
-        forward.Normalize();
+        // Movement direction relative to character forward
+        Vector3 moveDirection = transform.right * horizontal + transform.forward * vertical;
 
-        Vector3 move = right * x + forward * z;
+        // Apply movement menggunakan CharacterController - DIPERBAIKI
+        characterController.Move(moveDirection * moveSpeed * Time.deltaTime);
 
-        _controller.Move(move * moveSpeed * Time.deltaTime);
+        // Animator - DIPERBAIKI
+        bool isMoving = (horizontal != 0f || vertical != 0f) && isGrounded;
+        animator.SetBool("isWalking", isMoving);
+        animator.SetBool("isGrounded", isGrounded);
 
-        // --- TAMBAHAN 3: LOGIKA ANIMASI (PENTING) ---
-        // Jika x atau z lebih dari 0.1, berarti player sedang bergerak
-        bool isMoving = (Mathf.Abs(x) > 0.1f || Mathf.Abs(z) > 0.1f);
-
-        // Kirim sinyal ke Animator
-        // "isWalking" harus SAMA PERSIS huruf besar/kecilnya dengan di Animator
-        if (animator != null)
+        // Jump handling - DIPERBAIKI (pakai CharacterController, bukan Rigidbody)
+        if (Input.GetKeyDown(KeyCode.Space) && isGrounded)
         {
-            animator.SetBool("isWalking", isMoving);
+            velocity.y = Mathf.Sqrt(jumpHeight * -2f * gravity);
         }
-        // -------------------------------------------
 
-        // 3. Gravitasi
+        // Apply gravity
         velocity.y += gravity * Time.deltaTime;
-        _controller.Move(velocity * Time.deltaTime);
+        characterController.Move(velocity * Time.deltaTime);
+    }
+
+    void LateUpdate()
+    {
+        UpdateCamera();
+    }
+
+    void UpdateCamera()
+    {
+        if (playerCamera == null) return;
+
+        Vector3 targetPosition = transform.position + cameraOffset;
+        Vector3 currentCamPos = playerCamera.transform.position;
+
+        // Side-view camera: hanya follow di sumbu X dan Y
+        Vector3 newCamPos = new Vector3(targetPosition.x, targetPosition.y, currentCamPos.z);
+
+        playerCamera.transform.position = Vector3.Lerp(
+            currentCamPos,
+            newCamPos,
+            cameraFollowSpeed * Time.deltaTime
+        );
+
+        playerCamera.transform.LookAt(transform.position + Vector3.up * 1f);
     }
 }
