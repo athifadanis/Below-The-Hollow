@@ -275006,7 +275006,7 @@ MonoBehaviour:
   gravity: -9.81
   playerCamera: {fileID: 1778883024}
   cameraFollowSpeed: 3
-  cameraOffset: {x: -5, y: 2, z: 0}
+  cameraOffset: {x: -12, y: 2, z: 0}
 --- !u!143 &1386034095
 CharacterController:
   m_ObjectHideFlags: 0
